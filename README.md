@@ -14,7 +14,7 @@ Repository contains some scripts for quick deploy of the benchmark:
 Example below shows export procedure of all tables:
 
 ```
-psql -f ~/join-order-benchmark/schema.sql
-psql -vdatadir="'/home/user/join-order-benchmark'" -f ~/join-order-benchmark/copy.sql
+psql -f ~/jo-bench/schema.sql
+psql -vdatadir="'/home/user/jo-bench'" -f ~/jo-bench/copy.sql
 ```
 
