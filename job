@@ -1,0 +1,83 @@
+# ##############################################################################
+#
+# Make one pass of the Join Order Benchmark over a PostgreSQL instance.
+# Use 5 minutes time limit to break a query if it can't be executed in
+# a reasonable time. 
+#
+# Extraction of a value of execution time:
+# sed -n 's/.*"Execution Time": \([0-9]*\.[0-9]*\).*/\1/p'
+# here:
+# -n (with ending symbol /p) - print the only lines where template was matched.
+# '.*' - sequence of any symbols.
+# '[0-9]*\.[0-9]*' - template of floating point value.
+# '\(' and '\)' - boundaries of a value of variable '\1'.
+# use 'echo -e' to include \t symbol as tabulation in a string.
+#
+# Additional PG preferences:
+#	fsync = off
+#
+# ##############################################################################
+
+#!/bin/bash
+ulimit -c unlimited
+
+# Binaries and data dirs
+INSTDIR=`pwd`/tmp_install
+QUERY_DIR=../dbsamples/JOB/queries
+
+# Set PG environment variables for correct access to the DBMS
+# export PGDATA=pgdata_imdb
+# export PGPORT=5432
+# export PGUSER=`whoami`
+
+#define environment
+export LD_LIBRARY_PATH=$INSTDIR/lib:$LD_LIBRARY_PATH
+export PATH=$INSTDIR/bin:$PATH
+
+# Stop instances and clean logs.
+pg_ctl -D $PGDATA stop
+rm -rf logfile.log
+
+# Kill all processes
+unamestr=`uname`
+if [[ "$unamestr" == 'Linux' ]]; then
+    pkill -U `whoami` -9 -e postgres
+	pkill -U `whoami` -9 -e pgbench
+	pkill -U `whoami` -9 -e psql
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+    killall -u `whoami` -vz -9 postgres
+    killall -u `whoami` -vz -9 pgbench
+    killall -u `whoami` -vz -9 psql
+else
+    echo "Unintended OS."
+fi
+sleep 1
+
+pg_ctl -w -D $PGDATA -l logfile.log start
+
+filenum=1
+
+# Set parameters
+psql -c "ALTER SYSTEM SET max_parallel_workers_per_gather = 0" # Just stabilize results
+psql -c "ALTER SYSTEM SET statement_timeout = 300000" # Five minutes limit per query
+psql -c "ALTER SYSTEM SET log_statement = 'none'"
+psql -c "ALTER SYSTEM SET from_collapse_limit = 20"
+psql -c "ALTER SYSTEM SET join_collapse_limit = 20"
+psql -c "SELECT pg_reload_conf();"
+psql -c "VACUUM ANALYZE" # Be firmly confident about a table statistics
+
+echo "The Join Order Benchmark 1Pass test ..."
+echo -e "Query Number\tQuery Name\tExecution Time, ms" > job_onepass_result.dat
+
+for file in $QUERY_DIR/*.sql
+do
+  # Get filename
+  short_file=$(basename "$file")
+  echo -n "EXPLAIN (ANALYZE, FORMAT JSON) " > test.sql
+  cat $file >> test.sql
+  exec_time=$(psql -f test.sql | sed -n 's/.*"Execution Time": \([0-9]*\.[0-9]*\).*/\1/p')
+  echo -e "$filenum\t$short_file\t$exec_time" >> job_onepass_result.dat
+  filenum=$((filenum+1))
+done
+
+pg_ctl -D $PGDATA stop

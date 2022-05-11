@@ -2,7 +2,7 @@
 -- COPY the Join Order Benchmark data FROM csv files into PostgreSQL database.
 --
 -- Launch this script via a command, like this:
--- psql -vdatadir="'/home/andrey/PostgresPro/join-order-benchmark'" -f /home/andrey/PostgresPro/join-order-benchmark/copy.sql
+-- psql -vdatadir="'/home/danolivo/jo-bench'" -f /home/danolivo/jo-bench/copy.sql
 -- XXX: Don't forget to use the symbol "'" in a value of -vdatadir!
 --
 
