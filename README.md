@@ -10,7 +10,7 @@ Repository contains some scripts for quick deploy & run of the benchmark:
 * *schema.sql* - creates the data schema.
 * *copy.sql* - copies data from csv files into the tables. Uses `datadir` variable to make absolute paths to csv files. Use `psql -v` to define it.
 * *parts.sql* - script which splitted the tables. Just for future reusage.
-* *job* - an template script for quick launch of the benchmark.
+* *job* - a template script for quick launch of the benchmark.
 
 Example below shows export procedure of all tables:
 
