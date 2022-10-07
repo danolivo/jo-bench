@@ -19,3 +19,4 @@ psql -f ~/jo-bench/schema.sql
 psql -vdatadir="'/home/user/jo-bench'" -f ~/jo-bench/copy.sql
 ```
 
+NB! Deploying tested on database with C-locale.

@@ -26,9 +26,9 @@ INSTDIR=`pwd`/tmp_install
 QUERY_DIR=../dbsamples/JOB/queries
 
 # Set PG environment variables for correct access to the DBMS
-# export PGDATA=pgdata_imdb
-# export PGPORT=5432
-# export PGUSER=`whoami`
+ export PGDATA=`pwd`/pgdata_imdb
+ export PGPORT=5432
+ export PGUSER=`whoami`
 
 #define environment
 export LD_LIBRARY_PATH=$INSTDIR/lib:$LD_LIBRARY_PATH
@@ -58,8 +58,9 @@ pg_ctl -w -D $PGDATA -l logfile.log start
 filenum=1
 
 # Set parameters
-psql -c "ALTER SYSTEM SET max_parallel_workers_per_gather = 0" # Just stabilize results
-psql -c "ALTER SYSTEM SET statement_timeout = 300000" # Five minutes limit per query
+#psql -c "ALTER SYSTEM SET max_parallel_workers_per_gather = 0" # Just stabilize results
+psql -c "ALTER SYSTEM SET max_parallel_workers_per_gather = 8"
+psql -c "ALTER SYSTEM SET statement_timeout = 0"
 psql -c "ALTER SYSTEM SET log_statement = 'none'"
 psql -c "ALTER SYSTEM SET from_collapse_limit = 20"
 psql -c "ALTER SYSTEM SET join_collapse_limit = 20"
