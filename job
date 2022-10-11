@@ -26,7 +26,7 @@ INSTDIR=`pwd`/tmp_install
 QUERY_DIR=../dbsamples/JOB/queries
 
 # Set PG environment variables for correct access to the DBMS
- export PGDATA=`pwd`/pgdata_imdb
+ export PGDATA=`pwd`/PGDATA
  export PGPORT=5432
  export PGUSER=`whoami`
 
@@ -36,6 +36,7 @@ export PATH=$INSTDIR/bin:$PATH
 
 # Stop instances and clean logs.
 pg_ctl -D $PGDATA stop
+sleep 1
 rm -rf logfile.log
 
 # Kill all processes
@@ -58,6 +59,7 @@ pg_ctl -w -D $PGDATA -l logfile.log start
 filenum=1
 
 # Set parameters
+# NB! Consider to use fsync = 'off'
 #psql -c "ALTER SYSTEM SET max_parallel_workers_per_gather = 0" # Just stabilize results
 psql -c "ALTER SYSTEM SET max_parallel_workers_per_gather = 8"
 psql -c "ALTER SYSTEM SET statement_timeout = 0"
@@ -76,7 +78,9 @@ do
   short_file=$(basename "$file")
   echo -n "EXPLAIN (ANALYZE, FORMAT JSON) " > test.sql
   cat $file >> test.sql
-  exec_time=$(psql -f test.sql | sed -n 's/.*"Execution Time": \([0-9]*\.[0-9]*\).*/\1/p')
+  result=$(psql -f test.sql)
+  echo $result > $short_file".json"
+  exec_time=$(echo $result | sed -n 's/.*"Execution Time": \([0-9]*\.[0-9]*\).*/\1/p')
   echo -e "$filenum\t$short_file\t$exec_time" >> job_onepass_result.dat
   filenum=$((filenum+1))
 done
