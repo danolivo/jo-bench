@@ -16,7 +16,7 @@ Example below shows export procedure of all tables:
 
 ```
 psql -f ~/jo-bench/schema.sql
-psql -vdatadir="'/home/user/jo-bench'" -f ~/jo-bench/copy.sql
+psql -vdatadir="'$HOME/jo-bench'" -f ~/jo-bench/copy.sql
 ```
 
 NB! Deploying tested on database with C-locale.
