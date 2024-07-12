@@ -17,14 +17,14 @@ BEGIN
 	THEN
 		full_path = path || '/csv/' || tblname || '.csv';
 		raise NOTICE 'COPY % .', full_path;
-		EXECUTE format('COPY %I FROM ''%s'' WITH (FORMAT csv, NULL '''', DELIMITER '','', QUOTE ''"'', ESCAPE ''\'', ENCODING ''WIN1251'');', tblname, full_path);
+		EXECUTE format('COPY %I FROM ''%s'' WITH (FORMAT csv, NULL '''', DELIMITER '','', QUOTE ''"'', ESCAPE ''\'', ENCODING ''UTF8'');', tblname, full_path);
 		-- '
 	ELSE
 		FOR i IN 1..parts
 		LOOP
 			full_path = path || '/csv/' || tblname || '/' || tblname || '_' || i || '.csv';
 			raise NOTICE 'COPY % .', full_path;
-			EXECUTE format('COPY %I FROM ''%s'' WITH (FORMAT csv, NULL '''', DELIMITER '','', QUOTE ''"'', ESCAPE ''\'', ENCODING ''WIN1251'');', tblname, full_path);
+			EXECUTE format('COPY %I FROM ''%s'' WITH (FORMAT csv, NULL '''', DELIMITER '','', QUOTE ''"'', ESCAPE ''\'', ENCODING ''UTF8'');', tblname, full_path);
 			-- '
 		END LOOP;
 	END IF;
