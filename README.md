@@ -22,7 +22,7 @@ psql -vdatadir="'$HOME/jo-bench'" -f ~/jo-bench/copy.sql
 NB! Deploying tested on database with C-locale.
 
 ## Partitioning case
-To perform the same tests over partitioned by HASH versions of the tables, use file schema-hashedparts.sql:
+To perform the same tests over partitioned into two partitions by HASH versions of the tables, use file schema-hashedparts.sql:
 
 ```
 psql -f ~/jo-bench/schema-hashedparts.sql
@@ -31,3 +31,9 @@ psql -vdatadir="'$HOME/jo-bench'" -f ~/jo-bench/copy.sql
 
 It creates additional schema 'parts' in the database and sets search_path to this schema, so you will see tables from this schema.
 Fill these tables with data the same way as in the non-partitioned case.
+
+In case you want to vary the number of partitions and apply it only for top-6 most sizeable tables use another script:
+```
+psql -vp=<NN> -f ~/jo-bench/schema-multiparts.sql
+```
+Here NN - number of partitions you want to have on each big table. These tables will be created in the schema 'multiparts', search_path altered to reference directly this schema.
