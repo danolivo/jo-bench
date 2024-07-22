@@ -12,6 +12,8 @@ The repository contains some scripts for quick deployment & run of the benchmark
 * *parts.sql* - script that has split the tables. Just for future usage.
 * *job* - a template script for a quick launch of the benchmark.
 
+Also, you can take a quick look into the `scripts` folder for examples of benchmarking scripts. They are not ideal, as my recent experiments [have shown](https://danolivo.substack.com/p/looking-for-hidden-hurdles-when-postgres?r=34q1yy), but can help in putting away some unnecessary slips.
+
 The example below shows an export procedure for all tables:
 
 ```
@@ -36,4 +38,4 @@ In case you want to vary the number of partitions and apply it only for top-6 mo
 ```
 psql -vp=<NN> -f ~/jo-bench/schema-multiparts.sql
 ```
-Here NN - number of partitions you want to have on each big table. These tables will be created in the schema 'multiparts', search_path altered to reference directly this schema.
+Here NN - number of partitions you want to have on each big table. These tables will be created in the schema 'multiparts', the `search_path` will be altered to reference directly this schema.
