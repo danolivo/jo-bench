@@ -39,3 +39,21 @@ In case you want to vary the number of partitions and apply it only for top-6 mo
 psql -vp=<NN> -f ~/jo-bench/schema-multiparts.sql
 ```
 Here NN - number of partitions you want to have on each big table. These tables will be created in the schema 'multiparts', the `search_path` will be altered to reference directly this schema.
+
+# Notes on Postgres instance settings
+These settings shold be set into something like that:
+```
+from_collapse_limit = 20
+join_collapse_limit = 20
+min_parallel_table_scan_size = 0
+min_parallel_index_scan_size = 0
+default_statistics_target = 1000
+```
+Keep in mind that for certain join numbers, the standard planner may switch to GEQO. You might need to adjust the `geqo_threshold` parameter to ensure that the same planner is used during benchmarking.
+
+If you want to discover effects of parallel workers, intensify their usage:
+```
+echo "max_parallel_workers = 32" >> $PGDATA/postgresql.conf
+echo "parallel_setup_cost = 0.1" >> $PGDATA/postgresql.conf
+echo "parallel_tuple_cost = 0.0001" >> $PGDATA/postgresql.conf
+```
