@@ -23,6 +23,23 @@ psql -vdatadir="'$HOME/jo-bench'" -f ~/jo-bench/copy.sql
 
 NB! Deploying tested on database with C-locale.
 
+## Docker
+
+The repository includes a Dockerfile that builds PostgreSQL from source and pre-loads the JOB data. To build and run:
+
+```
+docker build -t jo-bench .
+docker run -d -p 5432:5432 --name jo-bench jo-bench
+```
+
+By default, it builds PostgreSQL 18 (REL_18_STABLE branch). To build a different branch:
+
+```
+docker build --build-arg POSTGRES_BRANCH=master -t jo-bench .
+```
+
+The container initializes the database with the JOB schema and data, so it's ready to use immediately after starting.
+
 ## Partitioning case
 To perform the same tests over partitioned into two partitions by HASH versions of the tables, use file schema-hashedparts.sql:
 
