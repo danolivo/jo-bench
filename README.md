@@ -25,11 +25,21 @@ NB! Deploying tested on database with C-locale.
 
 ## Docker
 
+A pre-built image is available on GitHub Container Registry:
+
+```bash
+# Pull the image
+docker pull ghcr.io/danolivo/jo-bench:latest
+
+# Run directly
+docker run -d --name job --shm-size=2g -p 5499:5432 ghcr.io/danolivo/jo-bench:latest
+```
+
 The repository includes a Dockerfile that builds PostgreSQL from source and pre-loads the JOB data. To build and run:
 
 ```
 docker build -t jo-bench .
-docker run -d -p 5432:5432 --name jo-bench jo-bench
+docker run -d -p 5499:5432 --shm-size=2g --name jo-bench jo-bench
 ```
 
 By default, it builds PostgreSQL 18 (REL_18_STABLE branch). To build a different branch:
@@ -64,7 +74,7 @@ from_collapse_limit = 20
 join_collapse_limit = 20
 min_parallel_table_scan_size = 0
 min_parallel_index_scan_size = 0
-default_statistics_target = 1000
+default_statistics_target = 2500
 ```
 Keep in mind that for certain join numbers, the standard planner may switch to GEQO. You might need to adjust the `geqo_threshold` parameter to ensure that the same planner is used during benchmarking.
 

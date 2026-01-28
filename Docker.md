@@ -2,7 +2,23 @@
 
 A minimal Docker image for building and running PostgreSQL 18 from source with pre-loaded JOB (Join Order Benchmark) data.
 
-## Quick Start
+## Pre-built Image
+
+A pre-built image is available on GitHub Container Registry:
+
+```bash
+# Pull the image
+docker pull ghcr.io/danolivo/jo-bench:latest
+
+# Run directly
+docker run -d --name job --shm-size=2g -p 5499:5432 ghcr.io/danolivo/jo-bench:latest
+```
+
+Available tags:
+- `latest` — most recent build
+- `REL_18_STABLE` — PostgreSQL 18 stable branch
+
+## Quick Start (Build Locally)
 
 ```bash
 # Build the image
