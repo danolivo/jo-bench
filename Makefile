@@ -68,7 +68,11 @@ endif
 run:
 	docker run -d \
 		--name $(IMAGE_NAME) \
-		-p 5432:5432 \
+		--memory=16g \
+		--memory-swap=32g \
+		--shm-size=2g \
+		--cpus=14 \
+		-p 5499:5432 \
 		$(IMAGE_NAME):$(POSTGRES_BRANCH)
 
 # Stop and remove container

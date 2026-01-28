@@ -11,8 +11,8 @@ make build
 # Run PostgreSQL
 make run
 
-# Connect to database
-psql -h localhost -U postgres -d job
+# Connect to database (port 5499 to avoid conflicts with local PostgreSQL)
+psql -h localhost -p 5499 -U postgres -d job
 
 # Or exec into container
 docker exec -it job bash
@@ -39,13 +39,6 @@ make build POSTGRES_BRANCH=REL_18_STABLE
 make build-all
 ```
 
-### Push to Docker Hub
-
-```bash
-make login USERNAME=youruser
-make push USERNAME=youruser
-```
-
 ## Running
 
 ### Start container
@@ -55,7 +48,7 @@ make run
 ```
 
 This creates a container named `job` with:
-- Port 5432 exposed
+- Port 5499 exposed on host (maps to container's 5432)
 - JOB benchmark data pre-loaded
 - PostgreSQL configured with `basic_pgconf.conf` settings
 
@@ -139,7 +132,7 @@ Run with privileged mode and mount a volume for cores:
 docker run -d \
     --name job \
     --privileged \
-    -p 5432:5432 \
+    -p 5499:5432 \
     -v job-cores:/home/postgres/cores \
     job:REL_18_STABLE
 ```
@@ -152,7 +145,7 @@ Core dumps can be copied from the container and analyzed on a separate Linux (De
 # Run container with a volume for cores
 docker run -d \
     --name job \
-    -p 5432:5432 \
+    -p 5499:5432 \
     -v job-cores:/home/postgres/cores \
     job:REL_18_STABLE
 
@@ -234,7 +227,7 @@ DOCKER_BUILDKIT=1 docker build \
 ```bash
 docker run -d \
     --name job \
-    -p 5432:5432 \
+    -p 5499:5432 \
     job:REL_18_STABLE
 ```
 
@@ -274,7 +267,7 @@ docker exec -it job psql -d job -f ~/queries/1a.sql
 
 ```bash
 # Using psql (if installed on host)
-psql -h localhost -p 5432 -U postgres -d job
+psql -h localhost -p 5499 -U postgres -d job
 
 # Using docker
 docker exec -it job psql
@@ -316,3 +309,36 @@ docker exec -it job psql -d job -f ~/queries/1a.sql
 # Run all queries
 docker exec -it job bash -c 'for q in ~/queries/*.sql; do echo "=== $q ==="; psql -d job -f "$q"; done'
 ```
+
+### Run the JOB basic benchmark test
+
+The `job_basic.sh` script runs all JOB queries with EXPLAIN ANALYZE and records execution times.
+
+```bash
+# Run the benchmark inside the container
+docker exec -it job bash -c 'cd ~ && ~/scripts/job_basic.sh'
+
+# Copy result files to host for analysis
+docker cp job:/home/postgres/pass.res ./pass.res
+docker cp job:/home/postgres/explains.res ./explains.res
+docker cp job:/home/postgres/logfile-job.log ./logfile-job.log
+```
+
+Output files:
+| File | Description |
+|------|-------------|
+| `pass.res` | Execution times: SeqNo, Query name, Time (ms) |
+| `explains.res` | Full EXPLAIN ANALYZE output for each query |
+| `logfile-job.log` | PostgreSQL server log |
+
+**Important:** When running the container for benchmarking, ensure sufficient shared memory:
+
+```bash
+docker run -d \
+    --name job \
+    --shm-size=2g \
+    -p 5499:5432 \
+    job:REL_18_STABLE
+```
+
+The `--shm-size` should be at least as large as `shared_buffers` (default 1GB in this image).

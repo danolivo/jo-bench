@@ -88,8 +88,10 @@ RUN mkdir -p /home/postgres/data /home/postgres/cores /home/postgres/scripts && 
 
 # Copy queries folder, scripts, and config
 COPY --chown=postgres:postgres queries/ /home/postgres/queries/
-COPY --chown=postgres:postgres copy.sql schema.sql /home/postgres/scripts/
-COPY --chown=postgres:postgres basic_pgconf.conf /home/postgres/scripts/
+COPY --chown=postgres:postgres copy.sql schema.sql schema-fdw.sql /home/postgres/scripts/
+COPY --chown=postgres:postgres basic_pgconf.conf scripts/job_basic.sh \
+	scripts/job_fdw.sh scripts/job_fdw_extra.sh \
+	/home/postgres/scripts/
 COPY --chown=postgres:postgres basic_pgconf.conf /home/postgres/scripts/
 
 # Enable coredumps: set core pattern and unlimited core size
@@ -97,10 +99,11 @@ RUN echo 'kernel.core_pattern=/home/postgres/cores/core.%e.%p.%t' >> /etc/sysctl
 	echo '* soft core unlimited' >> /etc/security/limits.conf && \
 	echo '* hard core unlimited' >> /etc/security/limits.conf
 
-# Setup environment in bashrc
+# Setup (default) environment in bashrc
 RUN echo '' >> /home/postgres/.bashrc && \
 	echo '# PostgreSQL environment' >> /home/postgres/.bashrc && \
 	echo 'export PATH=/usr/local/pgsql/bin:$PATH' >> /home/postgres/.bashrc && \
+	echo 'export PATH=/home/postgres/scripts:$PATH' >> /home/postgres/.bashrc && \
 	echo 'export PGDATA=/home/postgres/data' >> /home/postgres/.bashrc && \
 	echo 'export PGUSER=postgres' >> /home/postgres/.bashrc && \
 	echo 'export PGDATABASE=job' >> /home/postgres/.bashrc && \
@@ -132,6 +135,7 @@ RUN --mount=type=bind,source=csv,target=/home/postgres/csv \
 	createdb job && \
 	createdb job_fdw && \
 	psql -d job -f /home/postgres/scripts/schema.sql && \
+	psql -d job_fdw -f /home/postgres/scripts/schema-fdw.sql && \
 	psql -d job -v datadir="'/home/postgres'" -f /home/postgres/scripts/copy.sql && \
 	pg_ctl -D "${PGDATA}" stop
 
