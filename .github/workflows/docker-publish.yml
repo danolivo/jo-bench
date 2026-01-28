@@ -10,8 +10,18 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  build-and-push:
-    runs-on: ubuntu-latest
+  build:
+    strategy:
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            platform: linux/amd64
+            suffix: amd64
+          - runner: ubuntu-24.04-arm
+            platform: linux/arm64
+            suffix: arm64
+
+    runs-on: ${{ matrix.runner }}
     permissions:
       contents: read
       packages: write
@@ -30,25 +40,47 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata (tags, labels)
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=raw,value=latest
-            type=raw,value=REL_18_STABLE
-            type=sha,prefix=
-
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
-          platforms: linux/amd64
+          platforms: ${{ matrix.platform }}
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest-${{ matrix.suffix }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:REL_18_STABLE-${{ matrix.suffix }}
+          cache-from: type=gha,scope=${{ matrix.suffix }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.suffix }}
           build-args: |
             POSTGRES_BRANCH=REL_18_STABLE
+          provenance: false
+          sbom: false
+
+  # Create multi-arch manifest after both builds complete
+  manifest:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+
+    steps:
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create and push multi-arch manifest (latest)
+        run: |
+          docker manifest create ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest-amd64 \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest-arm64
+          docker manifest push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+
+      - name: Create and push multi-arch manifest (REL_18_STABLE)
+        run: |
+          docker manifest create ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:REL_18_STABLE \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:REL_18_STABLE-amd64 \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:REL_18_STABLE-arm64
+          docker manifest push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:REL_18_STABLE

@@ -34,6 +34,8 @@ docker pull ghcr.io/danolivo/jo-bench:latest
 # Run directly
 docker run -d --name job --shm-size=2g -p 5499:5432 ghcr.io/danolivo/jo-bench:latest
 ```
+Direct URL:
+https://github.com/danolivo/jo-bench/pkgs/container/jo-bench
 
 The repository includes a Dockerfile that builds PostgreSQL from source and pre-loads the JOB data. To build and run:
 
