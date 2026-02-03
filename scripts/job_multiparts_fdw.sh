@@ -4,27 +4,26 @@
 # Make one pass of the Join Order Benchmark over a PostgreSQL instance.
 # Tables are FDW representations of tables, placed in a different database.
 #
-# NOTE: enable 'smart' FDW features disabled by default. See fdw-extra.conf
-#
 # Copyright (c) 2024 - 2026 Andrei Lepikhov
 #
 # ##############################################################################
 
-set -euo pipefail
+# We anticipate statement timeouts here
+#set -euo pipefail
 
 ulimit -c unlimited
 
 PGDATABASE="job_fdw"
 export PGDATABASE=$PGDATABASE
 
-seqno=1
-RESULT_FILE="pass-$PGDATABASE.res"
-EXPLAIN_FILE="explains-$PGDATABASE.res"
-
 echo "Enable extra FDW settings ..."
 psql -c "ALTER SYSTEM SET enable_partitionwise_join = 'on'"
 psql -c "ALTER SYSTEM SET enable_partitionwise_aggregate = 'on'"
 psql -c "SELECT pg_reload_conf()"
+
+seqno=1
+RESULT_FILE="pass-$PGDATABASE.res"
+EXPLAIN_FILE="explains-$PGDATABASE.res"
 
 echo "The Join Order Benchmark 1Pass test ..."
 
@@ -68,8 +67,3 @@ done
 
 echo "Results saved to $RESULT_FILE"
 echo "Explains saved to $EXPLAIN_FILE"
-
-echo "Disable extra FDW settings ..."
-psql -c "ALTER SYSTEM SET enable_partitionwise_join = 'off'"
-psql -c "ALTER SYSTEM SET enable_partitionwise_aggregate = 'off'"
-psql -c "SELECT pg_reload_conf()"

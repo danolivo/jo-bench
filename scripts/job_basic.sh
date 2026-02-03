@@ -5,6 +5,8 @@
 # Use 5 minutes time limit to break a query if it can't be executed in
 # a reasonable time.
 #
+# Copyright (c) 2024 - 2026 Andrei Lepikhov
+#
 # ##############################################################################
 
 set -euo pipefail

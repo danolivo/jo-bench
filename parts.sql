@@ -1,6 +1,8 @@
-/*
- * Script for dividing large csv files into smaller buckets.
- */
+--
+-- Script for dividing large csv files into smaller buckets.
+--
+-- Copyright (c) 2024 - 2026 Andrei Lepikhov
+--
 
 /* Tables: 21 items */
 

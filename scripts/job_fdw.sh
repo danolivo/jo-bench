@@ -4,9 +4,12 @@
 # Make one pass of the Join Order Benchmark over a PostgreSQL instance.
 # Tables are FDW representations of tables, placed in a different database.
 #
+# Copyright (c) 2024 - 2026 Andrei Lepikhov
+#
 # ##############################################################################
 
-set -euo pipefail
+# We anticipate statement timeouts here
+#set -euo pipefail
 
 ulimit -c unlimited
 

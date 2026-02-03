@@ -1,16 +1,19 @@
 --
--- Schema definition for FDW tables connecting to the 'job' database.
+-- Create partitioned tables with foreign table partitions in 'job_fdw' database
+-- connecting to partition tables in 'job' database.
 --
--- NOTES:
--- - No indexes, even primary keys
--- - Reduce FDW cost due to socket loopback interface
+-- Uses incoming parameter :p, set by -vp=NN to identify which number of parts
+-- to create.
+--
+-- Prerequisites: Run schema-multiparts.sql in 'job' database first to create
+-- the actual partition tables.
 --
 -- Copyright (c) 2024 - 2026 Andrei Lepikhov
 --
 
 BEGIN;
 
-CREATE EXTENSION postgres_fdw;
+CREATE EXTENSION IF NOT EXISTS postgres_fdw;
 
 CREATE SERVER loopback FOREIGN DATA WRAPPER postgres_fdw OPTIONS (
   dbname 'job', use_remote_estimate  'on',
@@ -18,6 +21,22 @@ CREATE SERVER loopback FOREIGN DATA WRAPPER postgres_fdw OPTIONS (
   fdw_tuple_cost '0.001');
 CREATE USER MAPPING FOR CURRENT_USER SERVER loopback;
 
+-- Helper function to create foreign table partitions for a partitioned table
+CREATE OR REPLACE FUNCTION build__foreign_hashed_parts(tblname name, parts integer)
+RETURNS void
+LANGUAGE plpgsql AS $$
+DECLARE
+  i integer;
+BEGIN
+  FOR i IN 0..parts-1
+  LOOP
+    EXECUTE format(
+      'CREATE FOREIGN TABLE %I_part_%s PARTITION OF %I FOR VALUES WITH (modulus %s, remainder %s) SERVER loopback OPTIONS (table_name ''%s_part_%s'');',
+      tblname, i, tblname, parts, i, tblname, i);
+  END LOOP;
+END $$;
+
+-- Non-partitioned tables as simple foreign tables
 CREATE FOREIGN TABLE aka_name (
   id            integer NOT NULL,
   person_id     integer NOT NULL,
@@ -44,7 +63,8 @@ CREATE FOREIGN TABLE aka_title (
   md5sum          character varying(32)
 ) SERVER loopback OPTIONS (table_name 'aka_title');
 
-CREATE FOREIGN TABLE cast_info (
+-- Partitioned table: cast_info
+CREATE TABLE cast_info (
   id             integer NOT NULL,
   person_id      integer NOT NULL,
   movie_id       integer NOT NULL,
@@ -52,9 +72,11 @@ CREATE FOREIGN TABLE cast_info (
   note           text,
   nr_order       integer,
   role_id        integer NOT NULL
-) SERVER loopback OPTIONS (table_name 'cast_info');
+) PARTITION BY HASH (id);
+SELECT build__foreign_hashed_parts('cast_info'::name, :p);
 
-CREATE FOREIGN TABLE char_name (
+-- Partitioned table: char_name
+CREATE TABLE char_name (
   id            integer NOT NULL,
   name          text NOT NULL,
   imdb_index    character varying(12),
@@ -62,8 +84,10 @@ CREATE FOREIGN TABLE char_name (
   name_pcode_nf character varying(5),
   surname_pcode character varying(5),
   md5sum        character varying(32)
-) SERVER loopback OPTIONS (table_name 'char_name');
+) PARTITION BY HASH (id);
+SELECT build__foreign_hashed_parts('char_name'::name, :p);
 
+-- Non-partitioned tables as simple foreign tables
 CREATE FOREIGN TABLE comp_cast_type (
   id   integer NOT NULL,
   kind character varying(32) NOT NULL
@@ -120,13 +144,15 @@ CREATE FOREIGN TABLE movie_companies (
   note            text
 ) SERVER loopback OPTIONS (table_name 'movie_companies');
 
-CREATE FOREIGN TABLE movie_info (
+-- Partitioned table: movie_info
+CREATE TABLE movie_info (
   id           integer NOT NULL,
   movie_id     integer NOT NULL,
   info_type_id integer NOT NULL,
   info         text NOT NULL,
   note         text
-) SERVER loopback OPTIONS (table_name 'movie_info');
+) PARTITION BY HASH (id);
+SELECT build__foreign_hashed_parts('movie_info'::name, :p);
 
 CREATE FOREIGN TABLE movie_info_idx (
   id           integer NOT NULL,
@@ -149,7 +175,8 @@ CREATE FOREIGN TABLE movie_link (
   link_type_id    integer NOT NULL
 ) SERVER loopback OPTIONS (table_name 'movie_link');
 
-CREATE FOREIGN TABLE name (
+-- Partitioned table: name
+CREATE TABLE name (
   id            integer NOT NULL,
   name          text NOT NULL,
   imdb_index    character varying(12),
@@ -159,22 +186,26 @@ CREATE FOREIGN TABLE name (
   name_pcode_nf character varying(5),
   surname_pcode character varying(5),
   md5sum        character varying(32)
-) SERVER loopback OPTIONS (table_name 'name');
+) PARTITION BY HASH (id);
+SELECT build__foreign_hashed_parts('name'::name, :p);
 
-CREATE FOREIGN TABLE person_info (
+-- Partitioned table: person_info
+CREATE TABLE person_info (
   id           integer NOT NULL,
   person_id    integer NOT NULL,
   info_type_id integer NOT NULL,
   info         text NOT NULL,
   note         text
-) SERVER loopback OPTIONS (table_name 'person_info');
+) PARTITION BY HASH (id);
+SELECT build__foreign_hashed_parts('person_info'::name, :p);
 
 CREATE FOREIGN TABLE role_type (
   id   integer NOT NULL,
   role character varying(32) NOT NULL
 ) SERVER loopback OPTIONS (table_name 'role_type');
 
-CREATE FOREIGN TABLE title (
+-- Partitioned table: title
+CREATE TABLE title (
   id              integer NOT NULL,
   title           text NOT NULL,
   imdb_index      character varying(12),
@@ -187,8 +218,10 @@ CREATE FOREIGN TABLE title (
   episode_nr      integer,
   series_years    character varying(49),
   md5sum          character varying(32)
-) SERVER loopback OPTIONS (table_name 'title');
+) PARTITION BY HASH (id);
+SELECT build__foreign_hashed_parts('title'::name, :p);
 
+DROP FUNCTION build__foreign_hashed_parts;
 COMMIT;
 
 ANALYZE aka_name,aka_title,cast_info,char_name,comp_cast_type,

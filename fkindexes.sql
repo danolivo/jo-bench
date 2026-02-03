@@ -1,3 +1,9 @@
+--
+-- Create indexes on foreign key columns for the Join Order Benchmark.
+--
+-- Copyright (c) 2024 - 2026 Andrei Lepikhov
+--
+
 create index company_id_movie_companies on movie_companies(company_id);
 create index company_type_id_movie_companies on movie_companies(company_type_id);
 create index info_type_id_movie_info_idx on movie_info_idx(info_type_id);

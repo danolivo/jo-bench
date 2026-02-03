@@ -1,4 +1,10 @@
 # syntax=docker/dockerfile:1
+#
+# Dockerfile for the Join Order Benchmark environment with PostgreSQL.
+#
+# Copyright (c) 2024 - 2026 Andrei Lepikhov
+#
+
 FROM ubuntu:24.04 AS builder
 
 # Avoid interactive prompts during package installation

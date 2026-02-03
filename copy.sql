@@ -5,6 +5,8 @@
 -- psql -vdatadir="'/home/danolivo/jo-bench'" -f /home/danolivo/jo-bench/copy.sql
 -- XXX: Don't forget to use the symbol "'" in a value of -vdatadir!
 --
+-- Copyright (c) 2024 - 2026 Andrei Lepikhov
+--
 
 CREATE OR REPLACE FUNCTION imdb_copy(path text, tblname text, parts integer) RETURNS bool
 LANGUAGE plpgsql AS $$
