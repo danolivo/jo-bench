@@ -15,35 +15,51 @@ help:
 	@echo "PostgreSQL 18 Docker Build System (with pre-loaded JOB data)"
 	@echo ""
 	@echo "Usage:"
-	@echo "  make build                    Build for current platform"
+	@echo "  make build                    Build both plain and multiparts images"
 	@echo "  make build POSTGRES_BRANCH=REL_18_STABLE"
 	@echo "  make build-all                Build for all platforms (amd64, arm64)"
 	@echo "  make push USERNAME=youruser   Push multiplatform image to registry"
-	@echo "  make run                      Run PostgreSQL container"
+	@echo "  make run                      Run PostgreSQL container (plain)"
+	@echo "  make run-multiparts           Run PostgreSQL container (multiparts-fdw)"
 	@echo "  make stop                     Stop PostgreSQL container"
 	@echo "  make clean                    Remove image and build cache"
 	@echo "  make info                     Show image build info"
 	@echo ""
 	@echo "Variables:"
 	@echo "  POSTGRES_BRANCH  Git branch to build (default: REL_18_STABLE)"
-	@echo "  IMAGE_NAME       Image name (default: postgres18-build)"
+	@echo "  IMAGE_NAME       Image name (default: job)"
 	@echo "  USERNAME         Docker Hub username for push"
 	@echo "  PLATFORMS        Target platforms (default: linux/amd64,linux/arm64)"
 
-# Build for current platform only
+# Build both images for current platform
 build:
 	DOCKER_BUILDKIT=1 docker build \
+		-f plain.dockerfile \
 		--build-arg POSTGRES_BRANCH=$(POSTGRES_BRANCH) \
 		-t $(IMAGE_NAME):$(POSTGRES_BRANCH) \
+		.
+	DOCKER_BUILDKIT=1 docker build \
+		-f multiparts.dockerfile \
+		--build-arg POSTGRES_BRANCH=$(POSTGRES_BRANCH) \
+		-t $(IMAGE_NAME)-multiparts:$(POSTGRES_BRANCH) \
 		.
 
 # Build for multiple platforms (requires buildx)
 build-all: setup-buildx
 	docker buildx build \
+		-f plain.dockerfile \
 		--platform $(PLATFORMS) \
 		--build-arg POSTGRES_BRANCH=$(POSTGRES_BRANCH) \
 		-t $(IMAGE_NAME):$(POSTGRES_BRANCH) \
 		-t $(IMAGE_NAME):latest \
+		--load \
+		.
+	docker buildx build \
+		-f multiparts.dockerfile \
+		--platform $(PLATFORMS) \
+		--build-arg POSTGRES_BRANCH=$(POSTGRES_BRANCH) \
+		-t $(IMAGE_NAME)-multiparts:$(POSTGRES_BRANCH) \
+		-t $(IMAGE_NAME)-multiparts:latest \
 		--load \
 		.
 
@@ -58,9 +74,17 @@ ifndef USERNAME
 	$(error USERNAME is required. Usage: make push USERNAME=youruser)
 endif
 	docker buildx build \
+		-f plain.dockerfile \
 		--platform $(PLATFORMS) \
 		--build-arg POSTGRES_BRANCH=$(POSTGRES_BRANCH) \
 		-t $(FULL_IMAGE):$(POSTGRES_BRANCH) \
+		--push \
+		.
+	docker buildx build \
+		-f multiparts.dockerfile \
+		--platform $(PLATFORMS) \
+		--build-arg POSTGRES_BRANCH=$(POSTGRES_BRANCH) \
+		-t $(FULL_IMAGE)-multiparts:$(POSTGRES_BRANCH) \
 		--push \
 		.
 
@@ -75,10 +99,23 @@ run:
 		-p 5499:5432 \
 		$(IMAGE_NAME):$(POSTGRES_BRANCH)
 
+# Run multiparts container
+run-multiparts:
+	docker run -d \
+		--name $(IMAGE_NAME)-multiparts \
+		--memory=16g \
+		--memory-swap=32g \
+		--shm-size=2g \
+		--cpus=14 \
+		-p 5498:5432 \
+		$(IMAGE_NAME)-multiparts:$(POSTGRES_BRANCH)
+
 # Stop and remove container
 stop:
 	docker stop $(IMAGE_NAME) 2>/dev/null || true
 	docker rm $(IMAGE_NAME) 2>/dev/null || true
+	docker stop $(IMAGE_NAME)-multiparts 2>/dev/null || true
+	docker rm $(IMAGE_NAME)-multiparts 2>/dev/null || true
 
 # Show build info from image
 info:
@@ -97,4 +134,5 @@ endif
 # Clean up
 clean: stop
 	docker rmi $(IMAGE_NAME):latest $(IMAGE_NAME):$(POSTGRES_BRANCH) 2>/dev/null || true
+	docker rmi $(IMAGE_NAME)-multiparts:latest $(IMAGE_NAME)-multiparts:$(POSTGRES_BRANCH) 2>/dev/null || true
 	docker builder prune --filter type=exec.cachemount -f

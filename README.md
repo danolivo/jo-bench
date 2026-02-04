@@ -37,17 +37,17 @@ docker run -d --name job --shm-size=2g -p 5499:5432 ghcr.io/danolivo/jo-bench:la
 Direct URL:
 https://github.com/danolivo/jo-bench/pkgs/container/jo-bench
 
-The repository includes a Dockerfile that builds PostgreSQL from source and pre-loads the JOB data. To build and run:
+The repository includes `plain.dockerfile` that builds PostgreSQL from source and pre-loads the JOB data. To build and run:
 
-```
-docker build -t jo-bench .
+```bash
+docker build -f plain.dockerfile -t jo-bench .
 docker run -d -p 5499:5432 --shm-size=2g --name jo-bench jo-bench
 ```
 
 By default, it builds PostgreSQL 18 (REL_18_STABLE branch). To build a different branch:
 
-```
-docker build --build-arg POSTGRES_BRANCH=master -t jo-bench .
+```bash
+docker build -f plain.dockerfile --build-arg POSTGRES_BRANCH=master -t jo-bench .
 ```
 
 The container initializes the database with the JOB schema and data, so it's ready to use immediately after starting.
@@ -55,7 +55,7 @@ The container initializes the database with the JOB schema and data, so it's rea
 ## Partitioning case
 To perform the same tests over partitioned into two partitions by HASH versions of the tables, use file schema-hashedparts.sql:
 
-```
+```bash
 psql -f ~/jo-bench/schema-hashedparts.sql
 psql -vdatadir="'$HOME/jo-bench'" -f ~/jo-bench/copy.sql
 ```
@@ -64,14 +64,14 @@ It creates additional schema 'parts' in the database and sets search_path to thi
 Fill these tables with data the same way as in the non-partitioned case.
 
 In case you want to vary the number of partitions and apply it only for top-6 most sizeable tables use another script:
-```
+```bash
 psql -vp=<NN> -f ~/jo-bench/schema-multiparts.sql
 ```
 Here NN - number of partitions you want to have on each big table. These tables will be created in the schema 'multiparts', the `search_path` will be altered to reference directly this schema.
 
 # Notes on Postgres instance settings
 These settings shold be set into something like that:
-```
+```bash
 from_collapse_limit = 20
 join_collapse_limit = 20
 min_parallel_table_scan_size = 0
@@ -81,7 +81,7 @@ default_statistics_target = 2500
 Keep in mind that for certain join numbers, the standard planner may switch to GEQO. You might need to adjust the `geqo_threshold` parameter to ensure that the same planner is used during benchmarking.
 
 If you want to discover effects of parallel workers, intensify their usage:
-```
+```bash
 echo "max_parallel_workers = 32" >> $PGDATA/postgresql.conf
 echo "parallel_setup_cost = 0.1" >> $PGDATA/postgresql.conf
 echo "parallel_tuple_cost = 0.0001" >> $PGDATA/postgresql.conf

@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 #
-# Dockerfile for the Join Order Benchmark environment with PostgreSQL.
+# plain.dockerfile - Join Order Benchmark environment with PostgreSQL.
 #
 # Copyright (c) 2024 - 2026 Andrei Lepikhov
 #
