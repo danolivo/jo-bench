@@ -23,6 +23,17 @@ psql -vdatadir="'$HOME/jo-bench'" -f ~/jo-bench/copy.sql
 
 NB! Deploying tested on database with C-locale.
 
+## DuckDB
+To build the benchmark as a single DuckDB database file (`job.duckdb`) from the
+same CSV data, use the scripts in the [`duckdb/`](duckdb/) folder:
+
+```
+./duckdb/load.sh
+```
+
+See [`duckdb/README.md`](duckdb/README.md) for options and details. 
+
+
 ## Docker
 
 A pre-built image is available on GitHub Container Registry:
